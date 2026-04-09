@@ -1,0 +1,12 @@
+[package]
+name = "ttydr-60hz-generator"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "ttydr-60hz-generator"
+path = "generator.rs"
+
+[dependencies]
+elf = "0.8.0"
+lz4_flex = { version = "0.13.0", default-features = false }
