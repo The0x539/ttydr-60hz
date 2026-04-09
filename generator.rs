@@ -1,35 +1,47 @@
 use elf::{ElfBytes, endian::LittleEndian, symbol::Symbol};
+use indexmap::IndexMap;
 use std::{collections::HashMap, ffi::CStr, fmt::Write as _, io::Write, ops::RangeInclusive};
 
 fn main() {
-    let path = std::env::args_os().nth(1).expect("no input file specified");
-
-    let version_index = match &*std::env::args().nth(2).expect("no game version specified") {
-        "v1.0.0" => 0,
-        "v1.0.1" => 1,
-        s => panic!("unrecognized game version: {s}"),
-    };
+    let mut args = std::env::args().skip(1);
+    let path = args.next().expect("no input file specified");
+    let version = args.next().expect("no game version specified");
 
     let file_data = std::fs::read(path).unwrap();
     let file = ElfBytes::<LittleEndian>::minimal_parse(&file_data).unwrap();
-    let groups = extract_patches(&file);
-    let text = build_text_file(&groups, version_index);
+    let patches = PatchFile::parse(&file);
+    let text = build_text_file(&patches, &version);
     std::io::stdout().write_all(text.as_ref()).unwrap();
 }
 
-fn extract_patches(file: &ElfBytes<LittleEndian>) -> Vec<PatchGroup> {
-    let symbols = extract_symbols(file);
-    let text_header = file.section_header_by_name(".text").unwrap().unwrap();
-    let text = file.section_data(&text_header).unwrap().0;
-    let patch_names = extract_strings(&symbols["patch_names"], text);
+#[derive(Debug, Clone)]
+struct PatchFile<'a> {
+    versions: IndexMap<&'a str, &'a str>,
+    groups: Vec<PatchGroup<'a>>,
+}
 
-    let mut groups = Vec::new();
-    for name in patch_names {
-        let offset = symbols[name].st_value as usize;
-        let group = PatchGroup::from_bytes(&text[offset..]);
-        groups.push(group);
+impl<'a> PatchFile<'a> {
+    fn parse(file: &ElfBytes<'a, LittleEndian>) -> Self {
+        let symbols = extract_symbols(file);
+        let text_header = file.section_header_by_name(".text").unwrap().unwrap();
+        let text = file.section_data(&text_header).unwrap().0;
+
+        let versions = extract_strings(&symbols["versions"], text)
+            .chunks_exact(2)
+            .map(|c| (c[0], c[1]))
+            .collect();
+
+        let group_names = extract_strings(&symbols["groups"], text);
+
+        let mut groups = Vec::new();
+        for name in group_names {
+            let offset = symbols[name].st_value as usize;
+            let group = PatchGroup::from_bytes(name, &text[offset..]);
+            groups.push(group);
+        }
+
+        Self { versions, groups }
     }
-    groups
 }
 
 fn extract_symbols<'a>(file: &ElfBytes<'a, LittleEndian>) -> HashMap<&'a str, Symbol> {
@@ -53,22 +65,22 @@ fn extract_strings<'a>(symbol: &Symbol, section: &'a [u8]) -> Vec<&'a str> {
     v
 }
 
-fn build_text_file(groups: &[PatchGroup], version_index: usize) -> String {
-    let build_id = [
-        "78f37bb55d015be3b368ec22af595455f1544dc1",
-        "0effe4af1dec3a7966b934d4a7c3d2bf566a9c62",
-    ][version_index];
+fn build_text_file(patch_file: &PatchFile, version: &str) -> String {
+    let (version_index, _, &build_id) = patch_file
+        .versions
+        .get_full(version)
+        .expect("unrecognized game version");
 
-    let code_path = ["exefs/main-v100", "exefs/main-v101"][version_index];
+    let code_path = format!("exefs/main-{version}");
     let game_code = std::fs::read(code_path).ok().map(|nso| get_nso_text(&nso));
 
     let mut buf = String::new();
-    _ = writeln!(buf, "@nsobid-{build_id}");
-    _ = writeln!(buf, "@flag print-values");
-    _ = writeln!(buf, "@flag offset-shift 0x100");
+    _ = writeln!(buf, "@nsobid-{}", build_id.to_ascii_uppercase());
+    _ = writeln!(buf, "@flag print_values");
+    _ = writeln!(buf, "@flag offset_shift 0x100");
     _ = writeln!(buf);
 
-    for group in groups {
+    for group in &patch_file.groups {
         let group_text = group.to_text(version_index, game_code.as_deref());
         _ = writeln!(buf, "{group_text}");
     }
@@ -82,14 +94,16 @@ fn build_text_file(groups: &[PatchGroup], version_index: usize) -> String {
 }
 
 #[derive(Debug, Clone)]
-struct PatchGroup {
+struct PatchGroup<'a> {
+    name: &'a str,
     func_offsets: [i32; 2],
     patches: Vec<Patch>,
 }
 
-impl PatchGroup {
-    fn from_bytes(mut data: &[u8]) -> Self {
+impl<'a> PatchGroup<'a> {
+    fn from_bytes(name: &'a str, mut data: &[u8]) -> Self {
         Self {
+            name,
             func_offsets: std::array::from_fn(|_| read_i32(&mut data)),
             patches: std::iter::from_fn(|| Patch::from_bytes(&mut data)).collect(),
         }
@@ -97,6 +111,7 @@ impl PatchGroup {
 
     fn to_text(&self, version_index: usize, game_code: Option<&[u8]>) -> String {
         let mut buf = String::new();
+        _ = writeln!(buf, "[{}]", self.name);
         _ = writeln!(buf, "@enabled");
         let func_offset = self.func_offsets[version_index];
         for patch in &self.patches {

@@ -1,4 +1,12 @@
-patch_names:
+versions:
+	.asciz "v1.0.0"
+	.asciz "78f37bb55d015be3b368ec22af595455f1544dc1"
+	.asciz "v1.0.1"
+	.asciz "0effe4af1dec3a7966b934d4a7c3d2bf566a9c62"
+	.byte 0
+	.align 4
+
+groups:
 	.asciz "timekeeper_update"
 	.asciz "yuu_03"
 	.asciz "ac_gauge"

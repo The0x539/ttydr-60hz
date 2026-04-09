@@ -9,4 +9,5 @@ path = "generator.rs"
 
 [dependencies]
 elf = "0.8.0"
+indexmap = "2.14.0"
 lz4_flex = { version = "0.13.0", default-features = false }
