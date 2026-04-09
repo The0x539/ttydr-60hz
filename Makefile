@@ -3,19 +3,16 @@ object-file = target/patches.o
 
 .PHONY: clean both
 
-both: target/v1.0.0.pchtxt target/v1.0.1.pchtxt
+all: target/v1.0.0.pchtxt target/v1.0.1.pchtxt
 
-target/v1.0.0.pchtxt: $(generator) $(object-file)
-	$^ 100 > $@
+target/%.pchtxt: $(generator) $(object-file)
+	$^ $* > $@
 
-target/v1.0.1.pchtxt: $(generator) $(object-file)
-	$^ 101 > $@
-
-$(generator): Cargo.toml generator.rs
+$(generator): Cargo.toml *.rs
 	cargo build
 
-$(object-file): patches.S
-	aarch64-linux-gnu-as $< -o $@
+target/%.o: %.S
+	aarch64-linux-gnu-as $^ -o $@
 
 clean:
-	rm -r target
+	-rm -r target

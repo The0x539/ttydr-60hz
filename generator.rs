@@ -5,8 +5,8 @@ fn main() {
     let path = std::env::args_os().nth(1).expect("no input file specified");
 
     let version_index = match &*std::env::args().nth(2).expect("no game version specified") {
-        "100" => 0,
-        "101" => 1,
+        "v1.0.0" => 0,
+        "v1.0.1" => 1,
         s => panic!("unrecognized game version: {s}"),
     };
 
