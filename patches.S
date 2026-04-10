@@ -13,8 +13,6 @@ groups:
 	.asciz "ac_gauge"
 	.asciz "ac_flee_gauge"
 	.asciz "text_speed"
-	# .asciz "text_speed_2"
-	.asciz "text_speed_3"
 	.byte 0
 	.align 4
 
@@ -101,30 +99,6 @@ ac_flee_gauge:
 
 	.int -1
 
-text_speed_3:
-	.int 0x29bbd4
-	.int 0x29bbd4
-
-	# .int 0x2c
-	# cbz w8, 0x2c
-	# b 0x2c
-
-	.int -1
-
-text_speed_2:
-	.int 0x1b9358
-	.int 0x1b9358
-
-# 	.int 0x0
-# 	ldr x9, [x0]
-# 	mov x0, #0
-
-# 	.int 0x4
-# 	ldrh w8, [x9], #2
-# 	ret
-
-	.int -1
-
 text_speed:
 	.int 0x296604
 	.int 0x296604
@@ -132,41 +106,5 @@ text_speed:
 	.int 0x98
 	fmov s13, -2.0
 	fmov s13, -1.0
-
-	# .int 0x6bc
-	# fdiv s0, s13, s0
-	# fdiv s0, s0, s13
-
-	# .int 0x240
-	# blr x8
-	# mov x0, #1
-
-	# .int 0x6c0
-	# fadd s0, s1, s0
-	# nop
-
-	# .int 0x1c4
-	# fadd s0, s0, s1
-	# fmov s0, #8
-
-	# .int 0x0
-	# str d14, [sp, #-0xa0]!
-	# ret
-
-	# .int 0x98
-	# fmov s13, -2.0
-	# fmov s13, -8.0
-
-	# .int 0x70
-	# fmov s8, #1.0
-	# fmov s8, #2.0
-
-	# .int 0x188
-	# cmp w8, #24
-	# cmp w8, #48
-
-	# .int 0x838
-	# mov w9, #24
-	# mov w9, #48
 
 	.int -1
