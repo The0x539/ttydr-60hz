@@ -8,6 +8,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - run: make
+      - run: cat target/v1.0.0.pchtxt
+      - run: cat target/v1.0.1.pchtxt
       - uses: actions/upload-artifact@v7
         with:
           name: artifact
