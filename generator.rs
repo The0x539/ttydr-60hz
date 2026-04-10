@@ -155,7 +155,7 @@ impl Patch {
             assert_eq!(
                 self.old_code,
                 game_code[byte_offset as usize..][..4],
-                "Patch's old code does not match game code at offset {:#x}+{}",
+                "Patch's old code does not match game code at offset {:#x}+{:x}",
                 func_offset,
                 self.instruction_offset,
             );
