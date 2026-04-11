@@ -115,7 +115,7 @@ puni_movement:
 	.int 0xa2f274
 
 	.int 0x1ac
-	movk w9, #0x3dcc, lsl #16
-	movk w9, #0x3d4c, lsl #16
+	movk w9, #0x3dcc, lsl #16 // the top half of 0.1_f32
+	movk w9, #0x3d4c, lsl #16 // the top half of 0.05_f32
 
 	.int -1
