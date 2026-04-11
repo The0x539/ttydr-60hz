@@ -13,6 +13,8 @@ groups:
 	.asciz "ac_gauge"
 	.asciz "ac_flee_gauge"
 	.asciz "text_speed"
+	.asciz "puni_movement"
+	.asciz "puni_movement_experimentation"
 	.byte 0
 	.align 4
 
@@ -106,5 +108,53 @@ text_speed:
 	.int 0x98
 	fmov s13, -2.0
 	fmov s13, -1.0
+
+	.int -1
+
+puni_movement_experimentation:
+	# .int 0x83f7b0
+	# .int 0x8401a0
+	.int 0x840b30
+	.int 0x841520
+
+	# .int 0x188
+	# fmov s1, #30.0
+	# fmov s1, #60.0
+
+	# .int 0x198
+	# fmov s1, 10.0
+	# fmov s1, 20.0
+
+	# .int 0x198
+	# fmov s1, 10.0
+	# fmov s1, 5.0
+
+	# .int 0x5b0
+	# fmin s0, s0, s9
+	# fmul s0, s0, s9
+
+	# .int 0x8bc
+	# movk w24, #0x4974, lsl #16
+	# movk w24, #0x49f4, lsl #16
+
+	.int -1
+
+puni_movement:
+	.int 0xa2e884
+	.int 0xa2f274
+
+	# This seems to work as a partial fix,
+	# but it's definitely not the proper fix.
+	# .int 0x170
+	# fmin s2, s2, s3
+	# fmov s2, s3
+
+	# .int 0x184
+	# cbz w8, 28
+	# nop
+
+	.int 0x1ac
+	movk w9, #0x3dcc, lsl #16
+	movk w9, #0x3d4c, lsl #16
 
 	.int -1
