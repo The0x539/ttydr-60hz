@@ -14,6 +14,7 @@ groups:
 	.asciz "ac_flee_gauge"
 	.asciz "text_speed"
 	.asciz "puni_movement"
+	.asciz "chr_rotate"
 	.byte 0
 	.align 4
 
@@ -117,5 +118,23 @@ puni_movement:
 	.int 0x1ac
 	movk w9, #0x3dcc, lsl #16 // the top half of 0.1_f32
 	movk w9, #0x3d4c, lsl #16 // the top half of 0.05_f32
+
+	.int -1
+
+chr_rotate:
+	.int 0x50caa0
+	.int 0x50ccd0
+
+	.int 0x98
+	fmov s15, 2.0
+	fmov s15, 1.0
+
+	.int 0xa4
+	fmov s13, 1.0
+	fmov s13, 0.5
+
+	.int 0x280
+	fmov s1, -2.0
+	fmov s1, -1.0
 
 	.int -1
