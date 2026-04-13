@@ -12,6 +12,8 @@ fn main() {
     let patches = PatchFile::parse(&file);
     let text = build_text_file(&patches, &version);
     std::io::stdout().write_all(text.as_ref()).unwrap();
+
+    eprintln!("{}", env!("CARGO_PKG_VERSION_PRE"));
 }
 
 #[derive(Debug, Clone)]
@@ -84,7 +86,6 @@ fn build_text_file(patch_file: &PatchFile, version: &str) -> String {
         let group_text = group.to_text(version_index, game_code.as_deref());
         _ = writeln!(buf, "{group_text}");
     }
-    _ = writeln!(buf, "@stop").unwrap();
 
     if game_code.is_some() {
         eprintln!("✔️ All patches validated against game code");
@@ -169,9 +170,17 @@ impl Patch {
         for _ in 0..*range.start() {
             buf += "  "
         }
-        for byte in &self.new_code[range] {
+        for byte in &self.new_code[range.clone()] {
             _ = write!(buf, "{byte:02x}");
         }
+
+        if let [Some(old_asm), Some(new_asm)] = [self.old_code, self.new_code].map(disassemble) {
+            for _ in *range.end()..3 {
+                buf += "  ";
+            }
+            _ = write!(buf, " // {old_asm} -> {new_asm}",);
+        }
+
         buf
     }
 
@@ -201,4 +210,60 @@ fn get_nso_text(nso: &[u8]) -> Vec<u8> {
 fn read_i32(data: &mut &[u8]) -> i32 {
     let chunk = data.split_off(..4).unwrap();
     i32::from_le_bytes(chunk.try_into().unwrap())
+}
+
+fn disassemble(instr: [u8; 4]) -> Option<String> {
+    use capstone::prelude::*;
+    use std::rc::Rc;
+
+    let cs = {
+        thread_local! {
+            static CS: Rc<Capstone> = Capstone::new()
+                .arm64()
+                .mode(arch::arm64::ArchMode::Arm)
+                .build()
+                .unwrap()
+                .into();
+        };
+        CS.with(Rc::clone)
+    };
+
+    let instr = &cs.disasm_all(&instr, 0).unwrap()[0];
+
+    let mnemonic = instr.mnemonic()?;
+
+    let Some(mut op) = instr.op_str() else {
+        return Some(mnemonic.to_owned());
+    };
+
+    if mnemonic == "fmov" && op.contains("#") {
+        while op.ends_with("0") && !op.ends_with(".0") {
+            op = op.strip_suffix("0").unwrap();
+        }
+    }
+
+    if mnemonic == "mov" {
+        if let Some(new_op) = get_float_operand(op) {
+            return Some(format!("{mnemonic} {new_op}"));
+        }
+    }
+
+    Some(format!("{mnemonic} {op}"))
+}
+
+fn get_float_operand(op_str: &str) -> Option<String> {
+    op_str.strip_prefix("w")?;
+    let (prefix, imm_str) = op_str.rsplit_once(", #0x")?;
+    let imm_int = u32::from_str_radix(imm_str, 0x10).unwrap();
+    let imm_float = f32::from_bits(imm_int);
+
+    if !imm_float.is_normal() {
+        return None;
+    }
+
+    let mut s = format!("{prefix}, #{imm_float}");
+    if imm_float.fract() == 0.0 {
+        s += ".0";
+    }
+    Some(s)
 }
