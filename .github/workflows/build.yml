@@ -12,5 +12,5 @@ jobs:
       - run: cat target/v1.0.1.pchtxt
       - uses: actions/upload-artifact@v7
         with:
-          name: artifact
+          name: artifact.zip
           path: target/*.pchtxt
